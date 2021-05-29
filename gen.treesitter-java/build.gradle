@@ -1,0 +1,5 @@
+description = 'GumTree tree generator for Java code (tree-sitter).'
+
+dependencies {
+	implementation 'ai.serenade:java-tree-sitter:1.0.1'
+}

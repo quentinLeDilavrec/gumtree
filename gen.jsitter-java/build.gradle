@@ -1,0 +1,5 @@
+description = 'GumTree tree generator for Java code (jsitter).'
+
+dependencies {
+	implementation 'com.jetbrains.jsitter:jsitter:0.1-SNAPSHOT'
+}
