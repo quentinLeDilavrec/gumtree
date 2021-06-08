@@ -71,6 +71,11 @@ public abstract class AbstractTree implements ITree {
     }
 
     @Override
+    public int getChildrenSize() {
+        return children==null ? 0 :children.size();
+    }
+
+    @Override
     public void setChildren(List<ITree> children) {
         this.children = children;
         for (ITree c : children)

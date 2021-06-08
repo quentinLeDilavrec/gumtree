@@ -41,14 +41,25 @@ public class TestTreeSitterJavaGenerator {
         assertEquals(17, tree.getMetrics().size);
     }
 
-     @Test
-     public void testJava5Syntax() throws IOException {
-         String input = "public class Foo<A> { public List<A> foo; public void foo() "
-                 + "{ for (A f : foo) { System.out.println(f); } } }";
-         ITree tree = new TreeSitterJavaTreeGenerator().generateFrom().string(input).getRoot();
-         assertEquals(type("program"), tree.getType());
-         assertEquals(61, tree.getMetrics().size);
-     }
+    @Test
+    public void testJava5Syntax() throws IOException {
+        String input = "public class Foo<A> { public List<A> foo; public void foo() "
+                + "{ for (A f : foo) { System.out.println(f); } } }";
+        ITree tree = new TreeSitterJavaTreeGenerator().generateFrom().string(input).getRoot();
+        assertEquals(type("program"), tree.getType());
+        assertEquals(61, tree.getMetrics().size);
+    }
+
+    @Test
+    public void testJava5Syntax2() throws IOException {
+        String input = "public class Foo<B> { public List<B> foo; public void foo() "
+                + "{ for (B f : foo) { System.out.println(f); } } }";
+        ITree tree = new TreeSitterJavaTreeGenerator().generateFrom().string(input).getRoot();
+        assertEquals(type("program"), tree.getType());
+        assertEquals(42, tree.getMetrics().size);
+    }
+
+
 
      @Test
      public void testMethodInvocation() throws IOException {

@@ -66,7 +66,7 @@ public class TreeMetricComputer extends TreeVisitor.InnerNodesAndLeavesVisitor {
         currentPosition++;
     }
 
-    private static int hashFactor(int exponent) {
+    public static int hashFactor(int exponent) {
         return fastExponentiation(BASE, exponent);
     }
 
@@ -85,23 +85,23 @@ public class TreeMetricComputer extends TreeVisitor.InnerNodesAndLeavesVisitor {
         return result;
     }
 
-    private static int innerNodeHash(ITree tree, int size, int middleHash) {
+    public static int innerNodeHash(ITree tree, int size, int middleHash) {
         return Objects.hash(tree.getType(), tree.getLabel(), ENTER)
                 + middleHash
                 + Objects.hash(tree.getType(), tree.getLabel(), LEAVE) * hashFactor(size);
     }
 
-    private static int innerNodeStructureHash(ITree tree, int size, int middleHash) {
+    public static int innerNodeStructureHash(ITree tree, int size, int middleHash) {
         return Objects.hash(tree.getType(), ENTER)
                + middleHash
-               + Objects.hash(tree.getType(), LEAVE) * hashFactor(size);
+               + Objects.hash(tree.getType(), LEAVE) * hashFactor(size); // TODO QLD why hash factor on leave ? why sum hash
     }
 
-    private static int leafHash(ITree tree) {
+    public static int leafHash(ITree tree) {
         return innerNodeHash(tree, 1, 0);
     }
 
-    private static int leafStructureHash(ITree tree) {
+    public static int leafStructureHash(ITree tree) {
         return innerNodeStructureHash(tree, 1, 0);
     }
 }
