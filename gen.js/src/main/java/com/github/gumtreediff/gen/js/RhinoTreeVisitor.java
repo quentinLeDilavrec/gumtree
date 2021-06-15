@@ -37,7 +37,7 @@ public class RhinoTreeVisitor implements NodeVisitor {
 
     public RhinoTreeVisitor(AstRoot root) {
         trees = new HashMap<>();
-        context = new TreeContext();
+        context = new TreeContext.TreeContextImpl();
         ITree tree = buildTree(root);
         context.setRoot(tree);
     }

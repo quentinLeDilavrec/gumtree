@@ -60,7 +60,7 @@ public class TestJavaParserGenerator {
     public void testSimpleSyntax(String expectedRootType, int expectedSize, String input) throws IOException {
         ITree tree = new JavaParserGenerator().generateFrom().string(input).getRoot();
         assertEquals(type(expectedRootType), tree.getType());
-        assertEquals(expectedSize, tree.getMetrics().size);
+        assertEquals(expectedSize, tree.getMetrics().size());
     }
 
     @Test

@@ -38,7 +38,7 @@ public class TestJdtGenerator {
         String input = "public class Foo { public int foo; }";
         ITree tree = new JdtTreeGenerator().generateFrom().string(input).getRoot();
         assertEquals(COMPILATION_UNIT, tree.getType());
-        assertEquals(10, tree.getMetrics().size);
+        assertEquals(10, tree.getMetrics().size());
     }
 
     @Test
@@ -47,7 +47,7 @@ public class TestJdtGenerator {
                 + "{ for (A f : foo) { System.out.println(f); } } }";
         ITree tree = new JdtTreeGenerator().generateFrom().string(input).getRoot();
         assertEquals(COMPILATION_UNIT, tree.getType());
-        assertEquals(35, tree.getMetrics().size);
+        assertEquals(35, tree.getMetrics().size());
     }
 
     @Test
@@ -75,7 +75,7 @@ public class TestJdtGenerator {
         String input = "public class Foo { public void foo(){ new ArrayList<Object>().stream().forEach(a -> {}); } }";
         ITree tree = new JdtTreeGenerator().generateFrom().string(input).getRoot();
         assertEquals(COMPILATION_UNIT, tree.getType());
-        assertEquals(28, tree.getMetrics().size);
+        assertEquals(28, tree.getMetrics().size());
     }
 
     @Test
@@ -92,7 +92,7 @@ public class TestJdtGenerator {
         String input2 = "public interface Foo {}";
         TreeContext ct1 = new JdtTreeGenerator().generateFrom().string(input1);
         TreeContext ct2 = new JdtTreeGenerator().generateFrom().string(input2);
-        assertNotEquals(ct1.getRoot().getMetrics().hash, ct2.getRoot().getMetrics().hash);
+        assertNotEquals(ct1.getRoot().getMetrics().hash(), ct2.getRoot().getMetrics().hash());
     }
 
     @Test

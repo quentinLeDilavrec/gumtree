@@ -34,33 +34,33 @@ public class TestTreeUtils {
     @Test
     public void testPostOrderNumbering() {
         ITree root = TreeLoader.getDummySrc();
-        assertEquals(4, root.getMetrics().position);
-        assertEquals(2, root.getChild(0).getMetrics().position);
-        assertEquals(0, root.getChild("0.0").getMetrics().position);
-        assertEquals(1, root.getChild("0.1").getMetrics().position);
-        assertEquals(3, root.getChild(1).getMetrics().position);
+        assertEquals(4, root.getMetrics().position());
+        assertEquals(2, root.getChild(0).getMetrics().position());
+        assertEquals(0, root.getChild("0.0").getMetrics().position());
+        assertEquals(1, root.getChild("0.1").getMetrics().position());
+        assertEquals(3, root.getChild(1).getMetrics().position());
     }
 
     @Test
     public void testDepth() {
         ITree root = TreeLoader.getDummySrc();
         System.out.println(root.toTreeString());
-        assertEquals(0, root.getMetrics().depth);
-        assertEquals(1, root.getChild(0).getMetrics().depth);
-        assertEquals(2, root.getChild("0.0").getMetrics().depth);
-        assertEquals(2, root.getChild("0.1").getMetrics().depth);
-        assertEquals(1, root.getChild(1).getMetrics().depth);
+        assertEquals(0, root.getMetrics().depth());
+        assertEquals(1, root.getChild(0).getMetrics().depth());
+        assertEquals(2, root.getChild("0.0").getMetrics().depth());
+        assertEquals(2, root.getChild("0.1").getMetrics().depth());
+        assertEquals(1, root.getChild(1).getMetrics().depth());
     }
 
     @Test
     public void testSize() {
         ITree root = TreeLoader.getDummySrc();
         System.out.println(root.toTreeString());
-        assertEquals(5, root.getMetrics().size);
-        assertEquals(3, root.getChild(0).getMetrics().size);
-        assertEquals(1, root.getChild("0.0").getMetrics().size);
-        assertEquals(1, root.getChild("0.1").getMetrics().size);
-        assertEquals(1, root.getChild(1).getMetrics().size);
+        assertEquals(5, root.getMetrics().size());
+        assertEquals(3, root.getChild(0).getMetrics().size());
+        assertEquals(1, root.getChild("0.0").getMetrics().size());
+        assertEquals(1, root.getChild("0.1").getMetrics().size());
+        assertEquals(1, root.getChild(1).getMetrics().size());
     }
 
     public static final int H_AO = 96746278;
@@ -93,7 +93,7 @@ public class TestTreeUtils {
                         + BASE * BASE * BASE * BASE * BASE * BASE * BASE * H_EO
                         + BASE * BASE * BASE * BASE * BASE * BASE * BASE * BASE * H_EL
                         + BASE * BASE * BASE * BASE * BASE * BASE * BASE * BASE * BASE * H_AL,
-                root.getMetrics().hash);
+                root.getMetrics().hash());
         assertEquals(
                 H_BO
                 + BASE * H_CO
@@ -101,10 +101,10 @@ public class TestTreeUtils {
                 + BASE * BASE * BASE * H_DO
                 + BASE * BASE * BASE * BASE * H_DL
                 + BASE * BASE * BASE * BASE * BASE * H_BL,
-                root.getChild(0).getMetrics().hash);
-        assertEquals(H_CO + BASE * H_CL, root.getChild("0.0").getMetrics().hash);
-        assertEquals(H_DO + BASE * H_DL, root.getChild("0.1").getMetrics().hash);
-        assertEquals(H_EO + BASE * H_EL, root.getChild(1).getMetrics().hash);
+                root.getChild(0).getMetrics().hash());
+        assertEquals(H_CO + BASE * H_CL, root.getChild("0.0").getMetrics().hash());
+        assertEquals(H_DO + BASE * H_DL, root.getChild("0.1").getMetrics().hash());
+        assertEquals(H_EO + BASE * H_EL, root.getChild(1).getMetrics().hash());
     }
 
     @Test
@@ -115,22 +115,22 @@ public class TestTreeUtils {
         t2.setLabel("foo");
         ITree t3 = t2.deepCopy();
         t3.addChild(new Tree(TypeSet.type("foo")));
-        assertEquals(t0.getMetrics().hash, t1.getMetrics().hash);
-        assertNotEquals(t0.getMetrics().hash, t2.getMetrics().hash);
-        assertNotEquals(t0.getMetrics().hash, t3.getMetrics().hash);
-        assertEquals(t0.getMetrics().structureHash, t1.getMetrics().structureHash);
-        assertEquals(t0.getMetrics().structureHash, t2.getMetrics().structureHash);
-        assertNotEquals(t0.getMetrics().structureHash, t3.getMetrics().structureHash);
+        assertEquals(t0.getMetrics().hash(), t1.getMetrics().hash());
+        assertNotEquals(t0.getMetrics().hash(), t2.getMetrics().hash());
+        assertNotEquals(t0.getMetrics().hash(), t3.getMetrics().hash());
+        assertEquals(t0.getMetrics().structureHash(), t1.getMetrics().structureHash());
+        assertEquals(t0.getMetrics().structureHash(), t2.getMetrics().structureHash());
+        assertNotEquals(t0.getMetrics().structureHash(), t3.getMetrics().structureHash());
     }
 
     @Test
     public void testHeight() {
         ITree root = TreeLoader.getDummySrc();
-        assertEquals(2, root.getMetrics().height); // depth of a
-        assertEquals(1, root.getChild(0).getMetrics().height); // depth of b
-        assertEquals(0, root.getChild("0.0").getMetrics().height); // depth of c
-        assertEquals(0, root.getChild("0.1").getMetrics().height); // depth of d
-        assertEquals(0, root.getChild(1).getMetrics().height); // depth of e
+        assertEquals(2, root.getMetrics().height()); // depth of a
+        assertEquals(1, root.getChild(0).getMetrics().height()); // depth of b
+        assertEquals(0, root.getChild("0.0").getMetrics().height()); // depth of c
+        assertEquals(0, root.getChild("0.1").getMetrics().height()); // depth of d
+        assertEquals(0, root.getChild(1).getMetrics().height()); // depth of e
     }
 
     @Test

@@ -195,7 +195,7 @@ public class ZsMatcher implements Matcher {
         private int[] kr;
 
         private ZsTree(ITree t) {
-            this.nodeCount = t.getMetrics().size;
+            this.nodeCount = t.getMetrics().size();
             this.leafCount = 0;
             this.llds = new int[nodeCount];
             this.labels = new ITree[nodeCount];

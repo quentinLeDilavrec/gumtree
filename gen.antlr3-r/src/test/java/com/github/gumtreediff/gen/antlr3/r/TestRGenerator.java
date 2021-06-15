@@ -47,6 +47,6 @@ public class TestRGenerator {
     public void testSimpleParse(String input, String expectedRootType, int expectedSize) throws IOException {
         ITree t = new RTreeGenerator().generateFrom().string(input).getRoot();
         assertEquals(type(expectedRootType), t.getType());
-        assertEquals(expectedSize, t.getMetrics().size);
+        assertEquals(expectedSize, t.getMetrics().size());
     }
 }

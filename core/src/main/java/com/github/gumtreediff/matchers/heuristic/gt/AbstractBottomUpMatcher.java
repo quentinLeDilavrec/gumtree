@@ -72,8 +72,8 @@ public abstract class AbstractBottomUpMatcher {
         }
 
         protected void lastChanceMatch(ITree src, ITree dst) {
-            if (src.getMetrics().size < AbstractBottomUpMatcher.SIZE_THRESHOLD
-                    || dst.getMetrics().size < AbstractBottomUpMatcher.SIZE_THRESHOLD) {
+            if (src.getMetrics().size() < AbstractBottomUpMatcher.SIZE_THRESHOLD
+                    || dst.getMetrics().size() < AbstractBottomUpMatcher.SIZE_THRESHOLD) {
                 Matcher m = new ZsMatcher();
                 MappingStore zsMappings = m.match(src, dst, new MappingStore(src, dst));
                 for (Mapping candidate : zsMappings) {

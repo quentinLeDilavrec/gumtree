@@ -39,7 +39,7 @@ import java.util.Stack;
 
 import static com.github.gumtreediff.tree.TypeSet.type;
 
-@Register(id = "java-treesitter", accept = "\\.java$", priority = Registry.Priority.LOW)
+@Register(id = "jsitter-java", accept = "\\.java$", priority = Registry.Priority.LOW)
 public class JSitterJavaTreeGenerator extends TreeGenerator implements AutoCloseable {
 
     private final Parser parser;
@@ -53,7 +53,7 @@ public class JSitterJavaTreeGenerator extends TreeGenerator implements AutoClose
                 nodetype,
                 "java",
                 "tree_sitter_java",
-                "libtsjava.so",
+                "libtsjava",
                 Language.class.getClassLoader());
         lang.register(nodetype);
 
@@ -71,7 +71,7 @@ public class JSitterJavaTreeGenerator extends TreeGenerator implements AutoClose
         System.out.println(s.length());
         Tree<NodeType> tree = parser.parse(new StringText(s),null);
 
-        treeContext = new TreeContext();
+        treeContext = new TreeContext.TreeContextImpl();
         Zipper<?> zipper = tree.getRoot().zipper();
 
         Stack<ITree> parents = new Stack<>();

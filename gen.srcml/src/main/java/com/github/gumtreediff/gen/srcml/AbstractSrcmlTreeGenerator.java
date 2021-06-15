@@ -67,7 +67,7 @@ public abstract class AbstractSrcmlTreeGenerator extends ExternalProcessTreeGene
 
     public TreeContext getTreeContext(String xml) {
         XMLInputFactory fact = XMLInputFactory.newInstance();
-        context = new TreeContext();
+        context = new TreeContext.TreeContextImpl();
         currentLabel = new StringBuilder();
         try {
             ArrayDeque<ITree> trees = new ArrayDeque<>();

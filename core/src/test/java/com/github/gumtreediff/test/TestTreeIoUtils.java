@@ -116,7 +116,7 @@ public class TestTreeIoUtils {
     }
 
     private static TreeContext getTreeContext() {
-        TreeContext tc = new TreeContext();
+        TreeContext tc = new TreeContext.TreeContextImpl();
         ITree a = tc.createTree(TYPE_0);
         a.setPos(0);
         a.setLength(1000);

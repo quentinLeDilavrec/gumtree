@@ -33,6 +33,6 @@ public class TestCGenerator {
     public void testSimpleSyntax() throws IOException {
         String input = "int main() { printf(\"Hello world!\"); return 0; }";
         ITree t = new CTreeGenerator().generateFrom().string(input).getRoot();
-        assertEquals(18, t.getMetrics().size);
+        assertEquals(18, t.getMetrics().size());
     }
 }

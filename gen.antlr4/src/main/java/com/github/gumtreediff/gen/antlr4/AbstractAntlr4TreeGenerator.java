@@ -56,7 +56,7 @@ public abstract class AbstractAntlr4TreeGenerator extends TreeGenerator {
     public TreeContext generate(Reader r) throws IOException {
         try {
             ParseTree pt = getStartSymbol(r);
-            TreeContext context = new TreeContext();
+            TreeContext context = new TreeContext.TreeContextImpl();
             buildTree(context, pt);
             return context;
         } catch (RecognitionException e) {

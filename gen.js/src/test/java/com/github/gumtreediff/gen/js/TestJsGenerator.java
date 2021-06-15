@@ -37,21 +37,21 @@ public class TestJsGenerator {
     public void testStatement() throws IOException {
         String input = "console.log(\"Hello world!\");";
         ITree tree = new RhinoTreeGenerator().generateFrom().string(input).getRoot();
-        assertEquals(7, tree.getMetrics().size);
+        assertEquals(7, tree.getMetrics().size());
     }
 
     @Test
     public void testLambda() throws IOException {
         String input = "let f = (foo, bar) => foo + bar;";
         ITree tree = new RhinoTreeGenerator().generateFrom().string(input).getRoot();
-        assertEquals(12, tree.getMetrics().size);
+        assertEquals(12, tree.getMetrics().size());
     }
 
     @Test
     public void testComment() throws IOException {
         String input = "console.log(\"Hello world!\"); /* with comment */";
         ITree tree = new RhinoTreeGenerator().generateFrom().string(input).getRoot();
-        assertEquals(8, tree.getMetrics().size);
+        assertEquals(8, tree.getMetrics().size());
     }
 
     @Test

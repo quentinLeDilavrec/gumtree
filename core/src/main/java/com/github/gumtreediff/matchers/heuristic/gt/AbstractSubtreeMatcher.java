@@ -105,13 +105,13 @@ public abstract class AbstractSubtreeMatcher {
             int maxDstPos = (dst.isRoot()) ? 1 : dst.getParent().getChildren().size();
             int maxPosDiff = Math.max(maxSrcPos, maxDstPos);
             double pos = 1D - ((double) Math.abs(posSrc - posDst) / (double) maxPosDiff);
-            double po = 1D - ((double) Math.abs(src.getMetrics().position - dst.getMetrics().position)
+            double po = 1D - ((double) Math.abs(src.getMetrics().position() - dst.getMetrics().position())
                     / (double) this.getMaxTreeSize());
             return 100 * jaccard + 10 * pos + po;
         }
 
         protected int getMaxTreeSize() {
-            return Math.max(src.getMetrics().size, dst.getMetrics().size);
+            return Math.max(src.getMetrics().size(), dst.getMetrics().size());
         }
 
         protected void retainBestMapping(List<Mapping> mappingList, Set<ITree> srcIgnored, Set<ITree> dstIgnored) {
@@ -136,18 +136,18 @@ public abstract class AbstractSubtreeMatcher {
 
             @SuppressWarnings("unchecked")
             public PriorityTreeList(ITree tree) {
-                int listSize = tree.getMetrics().height - MIN_HEIGHT + 1;
+                int listSize = tree.getMetrics().height() - MIN_HEIGHT + 1;
                 if (listSize < 0)
                     listSize = 0;
                 if (listSize == 0)
                     currentIdx = -1;
                 trees = (List<ITree>[]) new ArrayList[listSize];
-                maxHeight = tree.getMetrics().height;
+                maxHeight = tree.getMetrics().height();
                 addTree(tree);
             }
 
             private int idx(ITree tree) {
-                return idx(tree.getMetrics().height);
+                return idx(tree.getMetrics().height());
             }
 
             private int idx(int height) {
@@ -159,7 +159,7 @@ public abstract class AbstractSubtreeMatcher {
             }
 
             private void addTree(ITree tree) {
-                if (tree.getMetrics().height >= MIN_HEIGHT) {
+                if (tree.getMetrics().height() >= MIN_HEIGHT) {
                     int idx = idx(tree);
                     if (trees[idx] == null) trees[idx] = new ArrayList<>();
                     trees[idx].add(tree);

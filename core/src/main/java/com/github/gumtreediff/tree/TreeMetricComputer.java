@@ -37,7 +37,7 @@ public class TreeMetricComputer extends TreeVisitor.InnerNodesAndLeavesVisitor {
 
     @Override
     public void visitLeave(ITree tree) {
-        tree.setMetrics(new TreeMetrics(1, 0, leafHash(tree), leafStructureHash(tree), currentDepth, currentPosition));
+        tree.setMetrics(TreeMetrics.create(1, 0, leafHash(tree), leafStructureHash(tree), currentDepth, currentPosition));
         currentPosition++;
     }
 
@@ -51,13 +51,13 @@ public class TreeMetricComputer extends TreeVisitor.InnerNodesAndLeavesVisitor {
         for (ITree child : tree.getChildren()) {
             TreeMetrics metrics = child.getMetrics();
             int exponent = 2 * sumSize + 1;
-            currentHash += metrics.hash * hashFactor(exponent);
-            currentStructureHash += metrics.structureHash * hashFactor(exponent);
-            sumSize += metrics.size;
-            if (metrics.height > maxHeight)
-                maxHeight = metrics.height;
+            currentHash += metrics.hash() * hashFactor(exponent);
+            currentStructureHash += metrics.structureHash() * hashFactor(exponent);
+            sumSize += metrics.size();
+            if (metrics.height() > maxHeight)
+                maxHeight = metrics.height();
         }
-        tree.setMetrics(new TreeMetrics(
+        tree.setMetrics(TreeMetrics.create(
                 sumSize + 1,
                 maxHeight + 1,
                 innerNodeHash(tree, 2 * sumSize + 1, currentHash),

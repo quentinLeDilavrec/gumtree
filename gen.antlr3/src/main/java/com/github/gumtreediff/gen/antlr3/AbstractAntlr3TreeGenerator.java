@@ -78,7 +78,7 @@ public abstract class AbstractAntlr3TreeGenerator<L extends Lexer, P extends Par
     public TreeContext generate(Reader r) throws IOException {
         try {
             CommonTree ct = getStartSymbol(r);
-            TreeContext context = new TreeContext();
+            TreeContext context = new TreeContext.TreeContextImpl();
             buildTree(context, ct);
             return context;
         } catch (RecognitionException e) {

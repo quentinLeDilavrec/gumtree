@@ -47,7 +47,7 @@ public class TestMetadata {
 
     @BeforeEach
     public void setUp() throws Exception {
-        tc = new TreeContext();
+        tc = new TreeContext.TreeContextImpl();
         someNode = tc.createTree(type("type0"), "");
         tc.setRoot(someNode);
     }

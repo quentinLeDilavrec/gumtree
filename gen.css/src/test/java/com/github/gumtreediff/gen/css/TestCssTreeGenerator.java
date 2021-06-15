@@ -40,7 +40,7 @@ public class TestCssTreeGenerator {
                 + "}");
         TreeContext ctx = new CssTreeGenerator().generateFrom().reader(r);
         ITree tree = ctx.getRoot();
-        assertEquals(10, tree.getMetrics().size);
+        assertEquals(10, tree.getMetrics().size());
     }
 
     @Test

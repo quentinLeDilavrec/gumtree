@@ -29,38 +29,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
-public class TreeContext {
-
-    private final Map<String, Object> metadata = new HashMap<>();
-
-    private final MetadataSerializers serializers = new MetadataSerializers();
-
-    private ITree root;
-
-    @Override
-    public String toString() {
-        return TreeIoUtils.toText(this).toString();
-    }
-
-    public void setRoot(ITree root) {
-        this.root = root;
-    }
-
-    public ITree getRoot() {
-        return root;
-    }
-
-    public ITree createTree(Type type, String label) {
-        return new Tree(type, label);
-    }
-
-    public ITree createTree(Type type) {
-        return new Tree(type);
-    }
-
-    public ITree createFakeTree(ITree... trees) {
-        return new FakeTree(trees);
-    }
+interface Context {
 
     /**
      * Get a global metadata.
@@ -69,8 +38,49 @@ public class TreeContext {
      * @param key of metadata
      * @return the metadata or null if not found
      */
-    public Object getMetadata(String key) {
-        return metadata.get(key);
+    Object getMetadata(String key);
+
+    /**
+     * Store a global metadata.
+     *
+     * @param key   of the metadata
+     * @param value of the metadata
+     * @return the previous value of metadata if existed or null
+     */
+    Object setMetadata(String key, Object value);
+
+    /**
+     * Get an iterator on global metadata only
+     */
+    Iterator<Map.Entry<String, Object>> getMetadata();
+
+    /**
+     * Get serializers for this tree context
+     */
+    TreeContext.MetadataSerializers getSerializers();
+
+    Context export(TreeContext.MetadataSerializers s);
+
+    Context export(String key, TreeIoUtils.MetadataSerializer s);
+
+    Context export(String... name);
+}
+
+public interface TreeContext extends Context {
+    void setRoot(ITree root);
+
+    ITree getRoot();
+
+    default ITree createTree(Type type, String label) {
+        return new Tree(type, label);
+    }
+
+    default ITree createTree(Type type) {
+        return new Tree(type);
+    }
+
+    default ITree createFakeTree(ITree... trees) {
+        return new FakeTree(trees);
     }
 
     /**
@@ -80,22 +90,11 @@ public class TreeContext {
      * @param key of metadata
      * @return the metadata or null if not found
      */
-    public Object getMetadata(ITree node, String key) {
+    default Object getMetadata(ITree node, String key) {
         Object metadata;
         if (node == null || (metadata = node.getMetadata(key)) == null)
             return getMetadata(key);
         return metadata;
-    }
-
-    /**
-     * Store a global metadata.
-     *
-     * @param key   of the metadata
-     * @param value of the metadata
-     * @return the previous value of metadata if existed or null
-     */
-    public Object setMetadata(String key, Object value) {
-        return metadata.put(key, value);
     }
 
     /**
@@ -105,7 +104,7 @@ public class TreeContext {
      * @param value of the metadata
      * @return the previous value of metadata if existed or null
      */
-    public Object setMetadata(ITree node, String key, Object value) {
+    default Object setMetadata(ITree node, String key, Object value) {
         if (node == null)
             return setMetadata(key, value);
         else {
@@ -117,48 +116,10 @@ public class TreeContext {
     }
 
     /**
-     * Get an iterator on global metadata only
-     */
-    public Iterator<Entry<String, Object>> getMetadata() {
-        return metadata.entrySet().iterator();
-    }
-
-    /**
-     * Get serializers for this tree context
-     */
-    public MetadataSerializers getSerializers() {
-        return serializers;
-    }
-
-    public TreeContext export(MetadataSerializers s) {
-        serializers.addAll(s);
-        return this;
-    }
-
-    public TreeContext export(String key, MetadataSerializer s) {
-        serializers.add(key, s);
-        return this;
-    }
-
-    public TreeContext export(String... name) {
-        for (String n : name)
-            serializers.add(n, x -> x.toString());
-        return this;
-    }
-
-    public TreeContext deriveTree() { // FIXME Should we refactor TreeContext class to allow shared metadata etc ...
-        TreeContext newContext = new TreeContext();
-        newContext.setRoot(getRoot().deepCopy());
-        newContext.metadata.putAll(metadata);
-        newContext.serializers.addAll(serializers);
-        return newContext;
-    }
-
-    /**
      * Get an iterator on local and global metadata.
      * To only get local metadata, simply use : `node.getMetadata()`
      */
-    public Iterator<Entry<String, Object>> getMetadata(ITree node) {
+    default Iterator<Entry<String, Object>> getMetadata(ITree node) {
         if (node == null)
             return getMetadata();
         return new Iterator<Entry<String, Object>>() {
@@ -204,7 +165,84 @@ public class TreeContext {
         };
     }
 
-    public static class Marshallers<E> {
+    TreeContext deriveTree();
+
+    class ContextImpl implements Context {
+
+        protected final Map<String, Object> metadata = new HashMap<>();
+
+        protected final MetadataSerializers serializers = new MetadataSerializers();
+
+        @Override
+        public Object getMetadata(String key) {
+            return metadata.get(key);
+        }
+
+        @Override
+        public Object setMetadata(String key, Object value) {
+            return metadata.put(key, value);
+        }
+
+        @Override
+        public Iterator<Entry<String, Object>> getMetadata() {
+            return metadata.entrySet().iterator();
+        }
+
+        @Override
+        public MetadataSerializers getSerializers() {
+            return serializers;
+        }
+
+        @Override
+        public Context export(MetadataSerializers s) {
+            serializers.addAll(s);
+            return this;
+        }
+
+        @Override
+        public Context export(String key, MetadataSerializer s) {
+            serializers.add(key, s);
+            return this;
+        }
+
+        @Override
+        public Context export(String... name) {
+            for (String n : name)
+                serializers.add(n, x -> x.toString());
+            return this;
+        }
+    }
+
+    class TreeContextImpl extends ContextImpl implements TreeContext {
+
+        private ITree root;
+
+        @Override
+        public String toString() {
+            return TreeIoUtils.toText(this).toString();
+        }
+
+        @Override
+        public void setRoot(ITree root) {
+            this.root = root;
+        }
+
+        @Override
+        public ITree getRoot() {
+            return root;
+        }
+
+        @Override
+        public TreeContext deriveTree() { // FIXME Should we refactor TreeContext class to allow shared metadata etc ...
+            TreeContextImpl newContext = new TreeContextImpl();
+            newContext.setRoot(getRoot().deepCopy());
+            newContext.metadata.putAll(metadata);
+            newContext.serializers.addAll(serializers);
+            return newContext;
+        }
+    }
+
+    class Marshallers<E> {
         Map<String, E> serializers = new HashMap<>();
 
         public static final Pattern valid_id = Pattern.compile("[a-zA-Z0-9_]*");
@@ -232,7 +270,7 @@ public class TreeContext {
         }
     }
 
-    public static class MetadataSerializers extends Marshallers<MetadataSerializer> {
+    class MetadataSerializers extends Marshallers<MetadataSerializer> {
 
         public void serialize(TreeFormatter formatter, String key, Object value) throws Exception {
             MetadataSerializer s = serializers.get(key);
@@ -241,7 +279,7 @@ public class TreeContext {
         }
     }
 
-    public static class MetadataUnserializers extends Marshallers<MetadataUnserializer> {
+    class MetadataUnserializers extends Marshallers<MetadataUnserializer> {
 
         public void load(ITree tree, String key, String value) throws Exception {
             MetadataUnserializer s = serializers.get(key);

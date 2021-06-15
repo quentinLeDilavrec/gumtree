@@ -60,13 +60,13 @@ public class LeafMoveMatcherThetaE implements Matcher {
             @Override
             public int compare(Mapping o1, Mapping o2) {
 
-                int posO1 = o1.first.getMetrics().position;
-                int posO2 = o2.first.getMetrics().position;
+                int posO1 = o1.first.getMetrics().position();
+                int posO2 = o2.first.getMetrics().position();
                 if (posO1 != posO2) {
                     return Integer.compare(posO1, posO2);
                 }
 
-                return Integer.compare(o1.second.getMetrics().position, o2.second.getMetrics().position);
+                return Integer.compare(o1.second.getMetrics().position(), o2.second.getMetrics().position());
             }
 
         }

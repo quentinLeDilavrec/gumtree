@@ -35,7 +35,7 @@ import static com.github.gumtreediff.tree.TypeSet.type;
 
 public abstract class AbstractJdtVisitor extends ASTVisitor {
 
-    protected TreeContext context = new TreeContext();
+    protected TreeContext context = new TreeContext.TreeContextImpl();
 
     protected Deque<ITree> trees = new ArrayDeque<>();
 

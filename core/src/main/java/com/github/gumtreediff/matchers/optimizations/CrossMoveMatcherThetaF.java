@@ -73,7 +73,7 @@ public class CrossMoveMatcherThetaF implements Matcher {
                 }
                 for (int i = 0; i < list.size(); i++) {
                     int position = -1;
-                    map.put(list.get(i).getMetrics().position, i);
+                    map.put(list.get(i).getMetrics().position(), i);
                 }
                 return map;
             }
@@ -85,12 +85,12 @@ public class CrossMoveMatcherThetaF implements Matcher {
 
             @Override
             public int compare(Mapping o1, Mapping o2) {
-                if (o1.first.getMetrics().position != o2.first.getMetrics().position) {
-                    return Integer.compare(positionSrc.get(o1.first.getMetrics().position),
-                            positionSrc.get(o2.first.getMetrics().position));
+                if (o1.first.getMetrics().position() != o2.first.getMetrics().position()) {
+                    return Integer.compare(positionSrc.get(o1.first.getMetrics().position()),
+                            positionSrc.get(o2.first.getMetrics().position()));
                 }
-                return Integer.compare(positionDst.get(o1.second.getMetrics().position),
-                        positionDst.get(o2.second.getMetrics().position));
+                return Integer.compare(positionDst.get(o1.second.getMetrics().position()),
+                        positionDst.get(o2.second.getMetrics().position()));
             }
 
         }

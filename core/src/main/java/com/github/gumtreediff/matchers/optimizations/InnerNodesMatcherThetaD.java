@@ -62,8 +62,8 @@ public class InnerNodesMatcherThetaD implements Matcher {
             public int compare(Entry<ITree, IdentityHashMap<ITree, Integer>> o1,
                                Entry<ITree, IdentityHashMap<ITree, Integer>> o2) {
 
-                return Integer.compare(o1.getKey().getMetrics().position,
-                        o2.getKey().getMetrics().position);
+                return Integer.compare(o1.getKey().getMetrics().position(),
+                        o2.getKey().getMetrics().position());
             }
 
         }

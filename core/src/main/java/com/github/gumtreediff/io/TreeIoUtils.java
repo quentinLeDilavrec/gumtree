@@ -771,7 +771,7 @@ public final class TreeIoUtils {
         @Override
         protected TreeContext generate(Reader source) throws IOException {
             XMLInputFactory fact = XMLInputFactory.newInstance();
-            TreeContext context = new TreeContext();
+            TreeContext context = new TreeContext.TreeContextImpl();
             try {
                 ArrayDeque<ITree> trees = new ArrayDeque<>();
                 XMLEventReader r = fact.createXMLEventReader(source);

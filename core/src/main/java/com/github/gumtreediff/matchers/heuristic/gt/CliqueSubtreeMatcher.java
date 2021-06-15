@@ -47,7 +47,7 @@ public class CliqueSubtreeMatcher extends AbstractSubtreeMatcher implements Matc
         public void filterMappings(MultiMappingStore multiMappings) {
             TIntObjectHashMap<Pair<List<ITree>, List<ITree>>> cliques = new TIntObjectHashMap<>();
             for (Mapping m : multiMappings) {
-                int hash = m.first.getMetrics().hash;
+                int hash = m.first.getMetrics().hash();
                 if (!cliques.containsKey(hash))
                     cliques.put(hash, new Pair<>(new ArrayList<>(), new ArrayList<>()));
                 cliques.get(hash).first.add(m.first);
@@ -103,11 +103,11 @@ public class CliqueSubtreeMatcher extends AbstractSubtreeMatcher implements Matc
             private int minDepth(Pair<List<ITree>, List<ITree>> trees) {
                 int depth = Integer.MAX_VALUE;
                 for (ITree t : trees.first)
-                    if (depth > t.getMetrics().depth)
-                        depth = t.getMetrics().depth;
+                    if (depth > t.getMetrics().depth())
+                        depth = t.getMetrics().depth();
                 for (ITree t : trees.second)
-                    if (depth > t.getMetrics().depth)
-                        depth = t.getMetrics().depth;
+                    if (depth > t.getMetrics().depth())
+                        depth = t.getMetrics().depth();
                 return depth;
             }
 
@@ -161,8 +161,8 @@ public class CliqueSubtreeMatcher extends AbstractSubtreeMatcher implements Matc
                 double[] sims = new double[4];
                 sims[0] = jaccardSimilarity(src.getParent(), dst.getParent());
                 sims[1] = src.positionInParent() - dst.positionInParent();
-                sims[2] = src.getMetrics().position - dst.getMetrics().position;
-                sims[3] = src.getMetrics().position;
+                sims[2] = src.getMetrics().position() - dst.getMetrics().position();
+                sims[3] = src.getMetrics().position();
                 return sims;
             }
 

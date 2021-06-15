@@ -237,12 +237,12 @@ public interface GTComposableTypes {
          *
          * @param url the URL, such as <code>0.1.2</code>
          */
-        default BasicTree getChild(String url) {
+        default ITree getChild(String url) {
             if (!urlPattern.matcher(url).matches())
                 throw new IllegalArgumentException("Wrong URL format : " + url);
 
             List<String> path = new LinkedList<>(Arrays.asList(url.split("\\.")));
-            BasicTree current = this;
+            ITree current = (ITree)this;
             while (path.size() > 0) {
                 int next = Integer.parseInt(path.remove(0));
                 current = current.getChild(next);
@@ -344,7 +344,7 @@ public interface GTComposableTypes {
             if (!LabeledNode.isIsomorphicTo(a, b))
                 return false;
 
-            if (a.getMetrics() != null && b.getMetrics() != null && a.getMetrics().hash != b.getMetrics().hash)
+            if (a.getMetrics() != null && b.getMetrics() != null && a.getMetrics().hash() != b.getMetrics().hash())
                 return false;
 
             if (!(a instanceof BasicTree))
@@ -375,7 +375,7 @@ public interface GTComposableTypes {
             if (!BasicNode.isIsoStructuralTo(a, b))
                 return false;
 
-            if (a.getMetrics() != null && b.getMetrics() != null && a.getMetrics().structureHash != b.getMetrics().structureHash)
+            if (a.getMetrics() != null && b.getMetrics() != null && a.getMetrics().structureHash() != b.getMetrics().structureHash())
                 return false;
 
             if (!(a instanceof BasicTree))
@@ -411,7 +411,7 @@ public interface GTComposableTypes {
          * This test fails fast.
          */
         default boolean isIsomorphicTo(ITree tree) {
-            if (getMetrics() != null && tree.getMetrics() != null && getMetrics().hash != tree.getMetrics().hash)
+            if (getMetrics() != null && tree.getMetrics() != null && getMetrics().hash() != tree.getMetrics().hash())
                 return false;
 
             if (!hasSameTypeAndLabel(tree))
@@ -435,7 +435,7 @@ public interface GTComposableTypes {
          * This test fails fast.
          */
         default boolean isIsoStructuralTo(ITree tree) {
-            if (getMetrics() != null && tree.getMetrics() != null && getMetrics().structureHash != tree.getMetrics().structureHash)
+            if (getMetrics() != null && tree.getMetrics() != null && getMetrics().structureHash() != tree.getMetrics().structureHash())
                 return false;
 
             if (this.getType() != tree.getType())

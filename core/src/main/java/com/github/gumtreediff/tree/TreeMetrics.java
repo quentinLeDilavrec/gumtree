@@ -20,25 +20,74 @@
 
 package com.github.gumtreediff.tree;
 
-public class TreeMetrics {
-    public final int size;
+public interface TreeMetrics {
+    int size();
 
-    public final int height;
+    int height();
 
-    public final int hash;
+    int hash();
 
-    public final int structureHash;
+    int structureHash();
 
-    public final int depth;
+    int depth();
 
-    public final int position;
+    int position();
 
-    public TreeMetrics(int size, int height, int hash, int structureHash, int depth, int position) {
-        this.size = size;
-        this.height = height;
-        this.hash = hash;
-        this.structureHash = structureHash;
-        this.depth = depth;
-        this.position = position;
+    static TreeMetrics create(int size, int height, int hash, int structureHash, int depth, int position){
+        return new TreeMetricsImpl(size, height, hash, structureHash, depth, position);
+    }
+
+    class TreeMetricsImpl implements TreeMetrics {
+
+        final int size;
+
+        final int height;
+
+        final int hash;
+
+        final int structureHash;
+
+        final int depth;
+
+        final int position;
+
+        public int size() {
+            return size;
+        }
+
+        @Override
+        public int height() {
+            return height;
+        }
+
+        @Override
+        public int hash() {
+            return hash;
+        }
+
+        @Override
+        public int structureHash() {
+            return structureHash;
+        }
+
+        @Override
+        public int depth() {
+            return depth;
+        }
+
+        @Override
+        public int position() {
+            return position;
+        }
+
+        public TreeMetricsImpl(int size, int height, int hash, int structureHash, int depth, int position) {
+            this.size = size;
+            this.height = height;
+            this.hash = hash;
+            this.structureHash = structureHash;
+            this.depth = depth;
+            this.position = position;
+        }
+
     }
 }

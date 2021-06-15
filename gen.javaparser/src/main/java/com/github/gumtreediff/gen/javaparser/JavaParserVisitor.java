@@ -45,7 +45,7 @@ public class JavaParserVisitor extends TreeVisitor {
     private LineReader reader;
 
     public JavaParserVisitor(LineReader reader) {
-        this.context = new TreeContext();
+        this.context = new TreeContext.TreeContextImpl();
         this.trees = new ArrayDeque<>();
         this.reader = reader;
     }

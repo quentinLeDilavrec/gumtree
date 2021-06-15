@@ -97,7 +97,7 @@ public class InfoTree {
      */
     public InfoTree(ITree aInputTree, LabelDictionary aLd) {
         this.inputTree = aInputTree;
-        treeSize = inputTree.getMetrics().size;
+        treeSize = inputTree.getMetrics().size();
         this.info = new int[16][treeSize];
         Arrays.fill(info[POST2_PARENT], -1);
         Arrays.fill(info[POST2_MIN_KR], -1);

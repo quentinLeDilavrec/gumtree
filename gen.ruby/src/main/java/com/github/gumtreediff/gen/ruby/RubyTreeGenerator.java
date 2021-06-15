@@ -47,7 +47,7 @@ public class RubyTreeGenerator extends TreeGenerator {
         ParserConfiguration config = new ParserConfiguration(0, version);
         try {
             Node n = p.parse("<code>", r, config);
-            return extractTreeContext(new TreeContext(), n, null);
+            return extractTreeContext(new TreeContext.TreeContextImpl(), n, null);
         }
         catch (org.jrubyparser.lexer.SyntaxException e) {
             throw new SyntaxException(

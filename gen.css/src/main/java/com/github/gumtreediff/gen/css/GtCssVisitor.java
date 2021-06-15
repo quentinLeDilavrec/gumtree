@@ -47,7 +47,7 @@ public class GtCssVisitor implements ICSSVisitor {
         this.lr = lr;
         this.settings = new CSSWriterSettings();
         this.sheet = sheet;
-        this.ctx = new TreeContext();
+        this.ctx = new TreeContext.TreeContextImpl();
         this.trees = new ArrayDeque<>();
         ITree root = this.ctx.createTree(symbol(sheet), ITree.NO_LABEL);
         setLocation(root, sheet);

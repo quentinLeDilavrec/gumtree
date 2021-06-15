@@ -34,7 +34,7 @@ public class TestPythonTreeGenerator {
         String input = "import sys\nimport json as json\n";
         TreeContext ctx = new PythonTreeGenerator().generateFrom().string(input);
         ITree t = ctx.getRoot();
-        assertEquals(6, t.getMetrics().size);
+        assertEquals(6, t.getMetrics().size());
     }
 
 }

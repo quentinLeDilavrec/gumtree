@@ -49,12 +49,12 @@ public abstract class AbstractMappingComparator implements Comparator<Mapping> {
         if (similarities.get(m2).compareTo(similarities.get(m1)) != 0) {
             return Double.compare(similarities.get(m2), similarities.get(m1));
         }
-        int srcPos = m1.first.getMetrics().position;
-        int dstPos = m2.first.getMetrics().position;
+        int srcPos = m1.first.getMetrics().position();
+        int dstPos = m2.first.getMetrics().position();
         if (srcPos != dstPos) {
             return Integer.compare(srcPos, dstPos);
         }
-        return Integer.compare(m1.second.getMetrics().position, m2.second.getMetrics().position);
+        return Integer.compare(m1.second.getMetrics().position(), m2.second.getMetrics().position());
     }
 
     protected abstract double similarity(ITree src, ITree dst);
@@ -69,7 +69,7 @@ public abstract class AbstractMappingComparator implements Comparator<Mapping> {
     }
 
     protected double numberingSimilarity(ITree src, ITree dst) {
-        return 1D - ((double) Math.abs(src.getMetrics().position - dst.getMetrics().position)
+        return 1D - ((double) Math.abs(src.getMetrics().position() - dst.getMetrics().position())
                 / (double) maxTreeSize);
     }
 

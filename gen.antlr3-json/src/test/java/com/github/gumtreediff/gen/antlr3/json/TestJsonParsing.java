@@ -40,6 +40,6 @@ public class TestJsonParsing {
         ITree tree = tc.getRoot();
 
         assertEquals(ARRAY, tree.getType());
-        assertEquals(37, tree.getMetrics().size);
+        assertEquals(37, tree.getMetrics().size());
     }
 }
