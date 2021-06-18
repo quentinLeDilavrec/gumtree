@@ -28,10 +28,9 @@ import com.github.gumtreediff.tree.*;
 import jsitter.api.*;
 import jsitter.api.Tree;
 import jsitter.impl.TSZipper;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectByteHashMap;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.util.*;
 
 import static com.github.gumtreediff.tree.TypeSet.type;
@@ -68,7 +67,8 @@ public class JSitterJavaTreeGenerator2 extends TreeGenerator implements AutoClos
     @Override
     public TreeContext generate(Reader r) throws IOException {
 
-        generate(new String(readerToCharArray(r)));
+        TreeContextCompressing.FullNode fullNode = generate(new String(readerToCharArray(r)));
+        treeContext.setRoot(new DecompressedTree(fullNode.node, null, -1));
 
         return treeContext;
     }
@@ -85,6 +85,7 @@ public class JSitterJavaTreeGenerator2 extends TreeGenerator implements AutoClos
     }
 
     static class AccC extends TreeContextCompressing.Acc {
+        public String indentation;
         List<CompressibleNode> children = new ArrayList<>();
 
         public void add(TreeContextCompressing.FullNode fullNode) {
@@ -124,8 +125,17 @@ public class JSitterJavaTreeGenerator2 extends TreeGenerator implements AutoClos
             int length = node.getByteSize() / 2;
             int padding = node.getPadding() / 2;
             String label = extractLabel((TSZipper<?>) node, pos, length);
+            if(type.toString().equals("identifier") && length == 0)
+                System.out.println();
             AccC popedAcc = pop();
-            return treeContext.createCompressedTree(type, label, popedAcc, popedAcc.children, node.getPadding() / 2, length, depth, position, s.substring(pos - padding, pos));
+            if (!aStack.isEmpty() && padding > 0 && aStack.peek().children.size() > 0) {
+                String spaces = s.substring(pos - padding, pos);
+                TreeContextCompressing.FullNode spacesLeaf = treeContext.createCompressedTree(type("gumtree_spaces"), spaces, popedAcc, Collections.emptyList(), spaces.length()).locate(depth, position);
+                acc(spacesLeaf);
+                inc();
+                pop();
+            }
+            return treeContext.createCompressedTree(type, label, popedAcc, popedAcc.children, length).locate(depth, position);
         }
 
         TreeContextCompressing.FullNode buildFrom(Zipper<?> zipper) {
@@ -134,6 +144,7 @@ public class JSitterJavaTreeGenerator2 extends TreeGenerator implements AutoClos
                 Zipper<?> down = has == Has.UP ? null : zipper.down();
                 if (down != null) {
                     inc();
+                    String indentation = aStack.peek().indentation; // TODO
                     zipper = down;
                     has = Has.DOWN;
                 } else {
@@ -153,7 +164,7 @@ public class JSitterJavaTreeGenerator2 extends TreeGenerator implements AutoClos
 //                            System.err.println(fullNode.metrics.height());
 //                            System.err.println(fullNode.metrics.size());
                             try {
-                                treeContext.setRoot(new DecompressedTree(fullNode.node, null, -1));
+                                return fullNode;
                             } catch (Exception e){
                             }
                             return fullNode;
@@ -181,7 +192,10 @@ public class JSitterJavaTreeGenerator2 extends TreeGenerator implements AutoClos
         } else if (node.visibleChildCount() > 0) {
             return "";
         } else {
-            return "";//return s.substring(pos,pos+length);
+            String sub = s.substring(pos, pos + length);
+            if (sub.equals(node.getType().getName()))
+                return "";
+            return s.substring(pos,pos+length);
         }
     }
 
@@ -219,17 +233,56 @@ class Utils {
                 + middleHash
                 + Objects.hash(type, LEAVE) * TreeMetricComputer.hashFactor(size);
     }
+
+    public static byte[] compressSpaces(String spaces) {
+        byte[] r = new byte[0];
+
+        return r;
+    }
+
+    public static Object debugSpaces(String label) {
+        return  label.replaceAll("\n", "\\\\n").replaceAll("\t", "\\\\t").replaceAll(" ", "\\s");
+    }
+
 }
 
-class CompressibleNode implements GTComposableTypes.BasicNode, GTComposableTypes.PositionedNode {
-    private Type type;
-    private int pos;
-    private int length;
+class SpacesStore {
+    static SpacesStore INSTANCE = new SpacesStore();
+    static SpacesStore INSTANCE_NLS = new SpacesStore();
+    private final String[] index2Spaces = new String[Byte.MAX_VALUE*2];
+    private final ObjectByteHashMap<String> spaces2Index = new ObjectByteHashMap<>();
 
-    public CompressibleNode(Type type, int pos, int length) {
+    String spaces(byte index) {
+        assert index < spaces2Index.size();
+        return index2Spaces[Byte.toUnsignedInt(index)];
+    }
+
+    byte index(String spaces) {
+        if (spaces2Index.containsKey(spaces))
+            return spaces2Index.get(spaces);
+        int size = spaces2Index.size();
+        assert size < Byte.MAX_VALUE*2: Arrays.toString(spaces.toCharArray());
+        index2Spaces[size] = spaces;
+        spaces2Index.put(spaces, (byte)size);
+        return (byte) size;
+    }
+
+    public int size() {
+        return spaces2Index.size();
+    }
+}
+
+abstract class CompressibleNode implements GTComposableTypes.BasicNode, Serializable { // TODO Serializable
+    private final Type type;
+//    private final byte nls;
+//    private final byte spaces;
+
+    public CompressibleNode(Type type) {
         this.type = type;
-        this.pos = pos;
-        this.length = length;
+//        int lastNL = spaces.lastIndexOf("\n");
+//        if (lastNL==-1) lastNL = 0; else lastNL++;
+//        this.nls = SpacesStore.INSTANCE_NLS.index(lastNL==0 ? "" : spaces.substring(0,lastNL-1));
+//        this.spaces = SpacesStore.INSTANCE.index(spaces.substring(lastNL));
     }
 
     @Override
@@ -237,20 +290,13 @@ class CompressibleNode implements GTComposableTypes.BasicNode, GTComposableTypes
         return type;
     }
 
-    @Override
-    public int getPos() {
-        return pos;
-    }
+//    public String getSpaces() {
+//        return SpacesStore.INSTANCE_NLS.spaces(nls)+SpacesStore.INSTANCE.spaces(spaces);
+//    }
 
     @Override
     public int getLength() {
-        return length;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s [%d,%d]",
-                getType(), getPos(), getEndPos());
+        return type.toString().length();
     }
 
     @Override
@@ -296,13 +342,31 @@ class CompressibleNode implements GTComposableTypes.BasicNode, GTComposableTypes
     public Iterator<Map.Entry<String, Object>> getMetadata() {
         throw new UnsupportedOperationException();
     }
+
+    public abstract void serialize(Writer writer) throws IOException;
+}
+
+class CompressibleLeaf extends CompressibleNode {
+
+    public CompressibleLeaf(Type type) {
+        super(type);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s", getType());
+    }
+
+    public void serialize(Writer writer) throws IOException {
+        writer.write(getType().toString());
+    }
 }
 
 class CompressibleLabeledNode extends CompressibleNode implements GTComposableTypes.LabeledNode {
     String label;
 
-    public CompressibleLabeledNode(Type type, String label, int pos, int length) {
-        super(type, pos, length);
+    public CompressibleLabeledNode(Type type, String label) {
+        super(type);
         this.label = label;
     }
 
@@ -314,11 +378,14 @@ class CompressibleLabeledNode extends CompressibleNode implements GTComposableTy
     @Override
     public String toString() {
         if (hasLabel())
-            return String.format("%s: %s [%d,%d]",
-                    getType(), getLabel(), getPos(), getEndPos());
+            return String.format("%s: %s", getType(), type("gumtree_spaces").equals(getType()) ? Utils.debugSpaces(getLabel()) : getLabel());
         else
-            return String.format("%s [%d,%d]",
-                    getType(), getPos(), getEndPos());
+            return String.format("%s", getType());
+    }
+
+    @Override
+    public int getLength() {
+        return label.length();
     }
 
     @Override
@@ -338,15 +405,25 @@ class CompressibleLabeledNode extends CompressibleNode implements GTComposableTy
         return GTComposableTypes.LabeledNode.isIsomorphicTo(this, tree);
     }
 
+    public void serialize(Writer writer) throws IOException {
+        writer.write(getLabel());
+    }
 }
 
 class CompressibleTree extends CompressibleNode implements GTComposableTypes.BasicArrayTree {
 
-    private final List<CompressibleNode> children;
+    protected final List<CompressibleNode> children;
+    private final int length;
 
-    public CompressibleTree(Type type, List<CompressibleNode> children, int pos, int length) {
-        super(type, pos, length);
+    public CompressibleTree(Type type, List<CompressibleNode> children, int length) {
+        super(type);
         this.children = children;
+        this.length = length;
+    }
+
+    @Override
+    public int getLength() {
+        return length;
     }
 
     @Override
@@ -370,6 +447,7 @@ class CompressibleTree extends CompressibleNode implements GTComposableTypes.Bas
             CompressibleNode child = children.get(i);
             TreeMetrics metrics = child.getMetrics();
             int exponent = 2 * acc.sumSize + 1;
+            acc.currentHash += metrics.hash() * TreeMetricComputer.hashFactor(exponent);
             acc.currentHash += metrics.hash() * TreeMetricComputer.hashFactor(exponent);
             acc.currentStructureHash += metrics.structureHash() * TreeMetricComputer.hashFactor(exponent);
             acc.sumSize += metrics.size();
@@ -448,24 +526,28 @@ class CompressibleTree extends CompressibleNode implements GTComposableTypes.Bas
         }
         return true;
     }
+
+    public void serialize(Writer writer) throws IOException {
+        for(CompressibleNode child: children) {
+            child.serialize(writer);
+        }
+    }
 }
 
 class CompressibleLabeledTree extends CompressibleTree implements GTComposableTypes.LabeledNode {
     String label;
 
-    public CompressibleLabeledTree(Type type, String label, List<CompressibleNode> children, int pos, int length) {
-        super(type, children, pos, length);
+    public CompressibleLabeledTree(Type type, String label, List<CompressibleNode> children, int length) {
+        super(type, children, length);
         this.label = label;
     }
 
     @Override
     public String toString() {
         if (hasLabel())
-            return String.format("%s: %s [%d,%d]",
-                    getType(), getLabel(), getPos(), getEndPos());
+            return String.format("%s: %s", getType(), type("gumtree_spaces").equals(getType()) ? Utils.debugSpaces(getLabel()) : getLabel());
         else
-            return String.format("%s [%d,%d]",
-                    getType(), getPos(), getEndPos());
+            return String.format("%s", getType());
     }
 
     @Override
@@ -478,23 +560,29 @@ class CompressibleLabeledTree extends CompressibleTree implements GTComposableTy
         return metrics(label);
     }
 
+    public void serialize(Writer writer) throws IOException {
+        writer.write(getLabel());
+        for(CompressibleNode child: children) {
+            child.serialize(writer);
+        }
+    }
 }
 
 class CompressibleNodeFactory {
-    public static CompressibleNode create(Type type, int pos, int length) {
-        return new CompressibleNode(type, pos, length);
+    public static CompressibleNode create(Type type) {
+        return new CompressibleLeaf(type);
     }
 
-    public static CompressibleNode create(Type type, String label, int pos, int length) {
-        return new CompressibleLabeledNode(type, label, pos, length);
+    public static CompressibleNode create(Type type, String label) {
+        return new CompressibleLabeledNode(type, label);
     }
 
-    public static CompressibleNode create(Type type, List<CompressibleNode> children, int pos, int length) {
-        return new CompressibleTree(type, children, pos, length);
+    public static CompressibleNode create(Type type, List<CompressibleNode> children, int length) {
+        return new CompressibleTree(type, children, length);
     }
 
-    public static CompressibleNode create(Type type, String label, List<CompressibleNode> children, int pos, int length) {
-        return new CompressibleLabeledTree(type, label, children, pos, length);
+    public static CompressibleNode create(Type type, String label, List<CompressibleNode> children, int length) {
+        return new CompressibleLabeledTree(type, label, children, length);
     }
 }
 
@@ -529,9 +617,9 @@ abstract class ADecompressedTree implements ITree {
         if (parent == null)
             return 0;//-1 * 100 + indexInParent;
         if (indexInParent == 0)
-            return parent.getPos() + compressed.getPos();
+            return parent.getPos();
         ITree leftS = parent.getChild(indexInParent - 1);
-        return leftS.getEndPos() + compressed.getPos();
+        return leftS.getEndPos();
     }
 
     /**
@@ -585,7 +673,7 @@ abstract class ADecompressedTree implements ITree {
     public String toString() {
         if (hasLabel())
             return String.format("%s: %s [%d,%d]",
-                    getType(), getLabel(), getPos(), getEndPos());
+                    getType(), type("gumtree_spaces").equals(getType()) ? Utils.debugSpaces(getLabel()) : getLabel(), getPos(), getEndPos());
         else
             return String.format("%s [%d,%d]",
                     getType(), getPos(), getEndPos());

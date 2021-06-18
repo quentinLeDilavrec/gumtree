@@ -68,6 +68,10 @@ public interface GTComposableTypes {
          */
         boolean isIsomorphicTo(ITree tree);
 
+        /**
+         * Returns the number of character corresponding to the node in its defining stream.
+         */
+        int getLength();
     }
 
     interface MutableBasicNode extends BasicNode {
@@ -311,11 +315,6 @@ public interface GTComposableTypes {
          * Returns the absolute character beginning position of the node in its defining stream.
          */
         int getPos();
-
-        /**
-         * Returns the number of character corresponding to the node in its defining stream.
-         */
-        int getLength();
 
         /**
          * @return the absolute character index where the node ends in its defining stream.

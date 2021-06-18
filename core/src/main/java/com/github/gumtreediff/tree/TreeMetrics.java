@@ -37,7 +37,13 @@ public interface TreeMetrics {
         return new TreeMetricsImpl(size, height, hash, structureHash, depth, position);
     }
 
-    class TreeMetricsImpl implements TreeMetrics {
+    static TreeMetrics create(int size, int height, int hash, int structureHash){
+        return new SubTreeMetricsImpl(size, height, hash, structureHash);
+    }
+
+    TreeMetrics located(int depth, int position);
+
+    class SubTreeMetricsImpl implements TreeMetrics {
 
         final int size;
 
@@ -46,6 +52,50 @@ public interface TreeMetrics {
         final int hash;
 
         final int structureHash;
+
+        public int size() {
+            return size;
+        }
+
+        @Override
+        public int height() {
+            return height;
+        }
+
+        @Override
+        public int hash() {
+            return hash;
+        }
+
+        @Override
+        public int structureHash() {
+            return structureHash;
+        }
+
+        @Override
+        public int depth() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int position() {
+            throw new UnsupportedOperationException();
+        }
+
+        public SubTreeMetricsImpl(int size, int height, int hash, int structureHash) {
+            this.size = size;
+            this.height = height;
+            this.hash = hash;
+            this.structureHash = structureHash;
+        }
+
+        @Override
+        public TreeMetrics located(int depth, int position) {
+            return new TreeMetricsImpl(this.size(), this.height(), this.hash(), this.structureHash(), depth, position);
+        }
+    }
+
+    class TreeMetricsImpl extends SubTreeMetricsImpl {
 
         final int depth;
 
@@ -81,10 +131,7 @@ public interface TreeMetrics {
         }
 
         public TreeMetricsImpl(int size, int height, int hash, int structureHash, int depth, int position) {
-            this.size = size;
-            this.height = height;
-            this.hash = hash;
-            this.structureHash = structureHash;
+            super(size,height,hash,structureHash);
             this.depth = depth;
             this.position = position;
         }

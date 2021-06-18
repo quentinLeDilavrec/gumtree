@@ -5,3 +5,9 @@ dependencies {
 	implementation 'org.eclipse.collections:eclipse-collections-api:10.4.0'
 	implementation 'org.eclipse.collections:eclipse-collections:10.4.0'
 }
+
+test {
+	maxHeapSize("2g")
+	minHeapSize("2g")
+	jvmArgs("-XX:+UseStringDeduplication")
+}

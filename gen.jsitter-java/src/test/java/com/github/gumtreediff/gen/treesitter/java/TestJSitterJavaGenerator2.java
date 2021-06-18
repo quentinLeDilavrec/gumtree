@@ -24,8 +24,10 @@ import com.github.gumtreediff.io.TreeIoUtils;
 import com.github.gumtreediff.tree.GTComposableTypes;
 import com.github.gumtreediff.tree.ITree;
 import com.github.gumtreediff.tree.TreeContext;
+import com.github.gumtreediff.tree.VersionInt;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
@@ -224,8 +226,15 @@ public class TestJSitterJavaGenerator2 {
         Path ori = Paths.get("C:\\Users\\quentin\\resources\\Versions");//\\apache\\hive");
 
 //        Path ori = Paths.get("C:\\Users\\quentin\\resources\\Versions\\");//\\INRIA\\spoon");//\\4b42324566bdd0da145a647d136a2f555c533978");
-        TreeContextCompressing ct1 = new GlobalGenerator().generateFrom(ori.toFile());
-        stats(ct1);
+        VersionedGenerator versionedGenerator = new VersionedGenerator();
+        int i = 0;
+        for(File a: ori.toFile().listFiles()) {
+            versionedGenerator.generateFrom(a, new VersionInt(i));
+            i++;
+        }
+        stats(versionedGenerator.getTreeContext());
+//        System.out.print("SpacesStore.INSTANCE.size(): ");
+//        System.out.println(SpacesStore.INSTANCE.size());
     }
 
     private int getCount(String c, String s) {
@@ -278,12 +287,13 @@ public class TestJSitterJavaGenerator2 {
         int totalDup = 0;
         int totalSpaceCompressed = 0;
         int totalSpaceDeCompressed = 0;
-        int totalSpaceOriginal = 0;
+        long totalSpaceOriginal = 0;
         int totalNotSyntaxDup = 0;
         int totalCollision = 0;
-        int totalNotSinglePaddingSpaces = 0;
+        int[] histoCollision = new int[100];
+//        int totalNotSinglePaddingSpaces = 0;
         for (TreeContextCompressing.MapValue d : ct1.getHashMap().values()) {
-            totalCollision--;
+            int collisions = -1;
             do {
                 int count = d.count + 1;
                 totalOriginal += count;
@@ -299,10 +309,10 @@ public class TestJSitterJavaGenerator2 {
                 else
                     childCount = 0;
 
-                if (d.paddingSpaces.size()>1) {
-                    totalNotSinglePaddingSpaces+=d.paddingSpaces.size()-1;
-                    System.out.println(d.paddingSpaces);
-                }
+//                if (d.paddingSpaces.size()>1) {
+//                    totalNotSinglePaddingSpaces+=d.paddingSpaces.size()-1;
+//                    System.out.println(d.paddingSpaces);
+//                }
 
                 int C = ptr_child * childCount + type_ptr + label_ptr;//(d.tree instanceof GTComposableTypes.LabeledNode ? label_ptr : 0);
                 int B = C + ptr_parent + index_in_parent + type_ptr;
@@ -315,15 +325,18 @@ public class TestJSitterJavaGenerator2 {
                 totalSpaceOriginal += b;
 
                 if (d.count > 0) {
-                    System.out.println();
-                    System.out.println(count);
-                    System.out.println(childCount);
+//                    System.out.println();
+//                    System.out.println(count);
+//                    System.out.println(childCount);
                 } else {
                     totalNoDup += count;
                 }
-                totalCollision++;
+                collisions++;
                 d=d.next;
             } while (d!= null);
+            totalCollision += collisions;
+            if (collisions>0)
+                histoCollision[Math.min(collisions-1, 99)]++;
         }
         int totalStructDup = 0;
         int totalNotSyntaxStructDup = 0;
@@ -350,10 +363,12 @@ public class TestJSitterJavaGenerator2 {
         System.out.println(totalNotSyntaxStructDup);
         System.out.print("Collisions:\t\t\t");
         System.out.println(totalCollision);
-        System.out.print("Not Single Padding Spaces:\t\t\t");
-        System.out.println(totalNotSinglePaddingSpaces);
+//        System.out.print("Not Single Padding Spaces:\t\t\t");
+//        System.out.println(totalNotSinglePaddingSpaces);
         System.out.print("histoDup:\t\t\t");
         System.out.println(Arrays.toString(histoDup));
+        System.out.print("histoCollision:\t\t\t");
+        System.out.println(Arrays.toString(histoCollision));
         System.out.println("--------space-----");
         System.out.print("Original:\t\t\t");
         System.out.println(totalSpaceOriginal);

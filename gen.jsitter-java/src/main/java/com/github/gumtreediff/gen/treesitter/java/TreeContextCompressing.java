@@ -9,9 +9,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.UnmodifiableIntObjectM
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -23,16 +21,77 @@ import static com.github.gumtreediff.tree.TypeSet.type;
 
 public interface TreeContextCompressing extends TreeContext {
 
+    interface TreeMetrics2 extends TreeMetrics {
+
+        int syntaxHash();
+
+        @Override
+        public TreeMetrics2 located(int depth, int position);
+
+
+        static TreeMetrics2 create(int size, int height, int syntaxHash, int hash, int structureHash, int depth, int position){
+            return new TreeMetrics2Impl(size, height, syntaxHash, hash, structureHash, depth, position);
+        }
+
+        static TreeMetrics2 create(int size, int height, int syntaxHash, int hash, int structureHash){
+            return new SubTreeMetrics2Impl(size, height, syntaxHash, hash, structureHash);
+        }
+    }
+
+    class SubTreeMetrics2Impl extends TreeMetrics.SubTreeMetricsImpl implements TreeMetrics2 {
+
+        private final int syntaxHash;
+
+        public int syntaxHash() {
+            return syntaxHash;
+        }
+
+        public SubTreeMetrics2Impl(int size, int height, int syntaxHash, int hash, int structureHash) {
+            super(size, height, hash, structureHash);
+            this.syntaxHash = syntaxHash;
+        }
+
+        @Override
+        public TreeMetrics2 located(int depth, int position) {
+            return new TreeMetrics2Impl(this.size(), this.height(), this.syntaxHash(), this.hash(), this.structureHash(), depth, position);
+        }
+    }
+
+    class TreeMetrics2Impl extends SubTreeMetrics2Impl {
+        final int depth;
+
+        final int position;
+
+        @Override
+        public int depth() {
+            return depth;
+        }
+
+        @Override
+        public int position() {
+            return position;
+        }
+
+        public TreeMetrics2Impl(int size, int height, int syntaxHash, int hash, int structureHash, int depth, int position) {
+            super(size, height, syntaxHash, hash, structureHash);
+            this.depth = depth;
+            this.position = position;
+        }
+    }
+
     class FullNode {
         CompressibleNode node;
-        TreeMetrics metrics;
-        // padding spaces
-        String spaces;
+        TreeMetrics2 metrics;
 
-        public FullNode(CompressibleNode node, TreeMetrics metrics, String s) {
+        public FullNode(CompressibleNode node, TreeMetrics2 metrics) {
             this.node = node;
             this.metrics = metrics;
-            this.spaces = s;
+        }
+
+        /** it mutates this **/
+        FullNode locate(int depth, int position) {
+            this.metrics = metrics.located(depth, position);
+            return this;
         }
     }
 
@@ -42,7 +101,6 @@ public interface TreeContextCompressing extends TreeContext {
         MapValue next = null;
         CompressibleNode tree;
         int count = 0;
-        Set<String> paddingSpaces = new ArraySet<>();
 
         MapValue(CompressibleNode tree) {
             this.tree = tree;
@@ -68,18 +126,20 @@ public interface TreeContextCompressing extends TreeContext {
 
     Map<Integer, MapValue> getStructHashMap();
 
-    FullNode createCompressedTree(Type type, String label, Acc acc, List<CompressibleNode> children, int pos, int length, int depth, int treePosition, String paddingSpaces);
+    FullNode createCompressedTree(Type type, String label, Acc acc, List<CompressibleNode> children, int length);
 
 
     class Acc {
         int sumSize = 0;
         int maxHeight = 0;
+        int currentSyntaxHash = 0;
         int currentHash = 0;
         int currentStructureHash = 0;
 
         public void add(FullNode fullNode) {
-            TreeMetrics metrics = fullNode.metrics;
+            TreeMetrics2 metrics = fullNode.metrics;
             int exponent = 2 * sumSize + 1;
+            currentSyntaxHash += metrics.syntaxHash() * TreeMetricComputer.hashFactor(exponent);
             currentHash += metrics.hash() * TreeMetricComputer.hashFactor(exponent);
             currentStructureHash += metrics.structureHash() * TreeMetricComputer.hashFactor(exponent);
             sumSize += metrics.size();
@@ -106,7 +166,7 @@ public interface TreeContextCompressing extends TreeContext {
 
 //        Map<Integer, MapValue> hashMap = new HashMap<>();
         HashMap<Integer, MapValue> structHashMap = new HashMap<>();
-        IntObjectHashMap<MapValue> hashMap = new IntObjectHashMap<>();
+        IntObjectHashMap<MapValue> hashMap = new IntObjectHashMap<>(64);
 
         @Override
         public IntObjectMap<MapValue> getHashMap() {
@@ -118,10 +178,13 @@ public interface TreeContextCompressing extends TreeContext {
         }
 
         @Override
-        public FullNode createCompressedTree(Type type, String label, Acc acc, List<CompressibleNode> children, int pos, int length, int depth, int treePosition, String paddingSpaces) {
+        public FullNode createCompressedTree(Type type, String label, Acc acc, List<CompressibleNode> children, int length) {
 
-            int hash = Utils.innerNodeHash(type, label, 2 * acc.sumSize + 1, acc.currentHash);
+            int syntaxHash = Utils.innerNodeHash(type, label, 2 * acc.sumSize + 1, acc.currentSyntaxHash);
+            int hash = type("gumtree_spaces").equals(type) ? 0 : Utils.innerNodeHash(type, label, 2 * acc.sumSize + 1, acc.currentHash);
             int structureHash = Utils.innerNodeStructureHash(type, 2 * acc.sumSize + 1, acc.currentStructureHash);
+
+            int collisionCount = 0;
 
             MapValue fromInHashMap = hashMap.get(hash);
             if (fromInHashMap != null) {
@@ -147,22 +210,25 @@ public interface TreeContextCompressing extends TreeContext {
                         }
                     }
 
-                    TreeMetrics metrics = TreeMetrics.create(
+                    TreeMetrics2 metrics = TreeMetrics2.create(
                             acc.sumSize + 1,
                             acc.maxHeight + 1,
+                            syntaxHash,
                             hash,
-                            structureHash,
-                            depth, treePosition);
+                            structureHash);
 
                     if (collision) {
-                        System.out.println("collision!");
+                        collisionCount++;
                         MapValue next = fromInHashMap.next;
                         if (next != null) {
                             fromInHashMap = next;
-                        } else break;
+                        } else {
+                            System.out.println("collisions: " + collisionCount);
+                            break;
+                        }
                     } else {
                         fromInHashMap.count++;
-                        return new FullNode(fromInHashMap.tree, metrics, paddingSpaces);
+                        return new FullNode(fromInHashMap.tree, metrics);
                     }
                 } while (true);
             }
@@ -171,24 +237,27 @@ public interface TreeContextCompressing extends TreeContext {
 
             CompressibleNode tree;
             if (label.equals(""))
-                if (children.size() <= 0)
-                    tree = CompressibleNodeFactory.create(type, pos, length);
+                if (children.size() <= 0) {
+                    if (length != type.toString().length())
+                        throw new RuntimeException("" + length + "!=" + type.toString().length() + " for " + type.toString());
+                    tree = CompressibleNodeFactory.create(type);
+                }
                 else
-                    tree = CompressibleNodeFactory.create(type, children, pos, length);
-            else if (children.size() <= 0)
-                tree = CompressibleNodeFactory.create(type, label, pos, length);
-            else
-                tree = CompressibleNodeFactory.create(type, label, children, pos, length);
+                    tree = CompressibleNodeFactory.create(type, children, length);
+            else if (children.size() <= 0) {
+                assert length == label.length(): "" + length + "!=" + label.length() + " for " + label;
+                tree = CompressibleNodeFactory.create(type, label);
+            } else
+                tree = CompressibleNodeFactory.create(type, label, children, length);
 
-            TreeMetrics metrics = TreeMetrics.create(
+            TreeMetrics2 metrics = TreeMetrics2.create(
                     acc.sumSize + 1,
                     acc.maxHeight + 1,
+                    syntaxHash,
                     hash,
-                    structureHash,
-                    depth, treePosition);
+                    structureHash);
 
             MapValue data = new MapValue(tree);
-            data.paddingSpaces.add(paddingSpaces);
             if (fromInHashMap != null) {
                 fromInHashMap.next = data;
             } else {
@@ -200,7 +269,7 @@ public interface TreeContextCompressing extends TreeContext {
                 structHashMap.put(structureHash, data);
             }
 
-            return new FullNode(tree, metrics, paddingSpaces);
+            return new FullNode(tree, metrics);
         }
 
         @Override
@@ -225,149 +294,238 @@ class TreeContextVersionedCompressing extends TreeContext.ContextImpl {
     }
 }
 
-class MainTreeContextCompressing extends TreeContextCompressing.TreeContextCompressingImpl {
+class VersionedTreeContextCompressing extends TreeContextCompressing.TreeContextCompressingImpl {
 
-    TreeContextCompressing getLocalTC() {
-        return new LocalTreeContextCompressing();
+    Map<Version, ITree> roots = new HashMap<>();
+
+    public void putRoot(Version when, ITree root) {
+        roots.put(when, root);
     }
 
-    class LocalTreeContextCompressing implements TreeContextCompressing {
-
-        @Override
-        public Object getMetadata(String key) {
-            return MainTreeContextCompressing.this.getMetadata(key);
-        }
-
-        @Override
-        public Object setMetadata(String key, Object value) {
-            return MainTreeContextCompressing.this.setMetadata(key, value);
-        }
-
-        @Override
-        public Iterator<Map.Entry<String, Object>> getMetadata() {
-            return MainTreeContextCompressing.this.getMetadata();
-        }
-
-        @Override
-        public MetadataSerializers getSerializers() {
-            return MainTreeContextCompressing.this.getSerializers();
-        }
-
-        @Override
-        public TreeContext export(MetadataSerializers s) {
-            MainTreeContextCompressing.this.export(s);
-            return this;
-        }
-
-        @Override
-        public TreeContext export(String key, TreeIoUtils.MetadataSerializer s) {
-            MainTreeContextCompressing.this.export(key, s);
-            return this;
-        }
-
-        @Override
-        public TreeContext export(String... name) {
-            MainTreeContextCompressing.this.export(name);
-            return this;
-        }
-
-        @Override
-        public void setRoot(ITree root) {
-            throw new RuntimeException();
-        }
-
-        @Override
-        public ITree getRoot() {
-            throw new RuntimeException();
-        }
-
-        @Override
-        public TreeContext deriveTree() {
-            return MainTreeContextCompressing.this.deriveTree();
-        }
-
-        @Override
-        public String serialize() {
-            return null;
-        }
-
-        @Override
-        public IntObjectMap<MapValue> getHashMap() {
-            return MainTreeContextCompressing.this.getHashMap();
-        }
-
-        @Override
-        public Map<Integer, MapValue> getStructHashMap() {
-            return MainTreeContextCompressing.this.getStructHashMap();
-        }
-
-        @Override
-        public FullNode createCompressedTree(Type type, String label, Acc acc, List<CompressibleNode> children, int pos, int length, int depth, int treePosition, String paddingSpaces) {
-            return MainTreeContextCompressing.this.createCompressedTree(type, label, acc, children, pos, length, depth, treePosition, paddingSpaces);
-        }
+    public ITree getRoot(Version when) {
+        return roots.get(when);
     }
 
+    MainTreeContextCompressing getAtVersionTC() {
+        return new MainTreeContextCompressing();
+    }
+
+    class MainTreeContextCompressing extends NestableTreeContextCompressing {
+
+        TreeContextCompressing getLocalTC() {
+            return new LocalTreeContextCompressing();
+        }
+
+        @Override
+        protected TreeContextCompressing getParentContext() {
+            return VersionedTreeContextCompressing.this;
+        }
+
+        class LocalTreeContextCompressing extends NestableTreeContextCompressing {
+
+            @Override
+            protected TreeContextCompressing getParentContext() {
+                return MainTreeContextCompressing.this;
+            }
+        }
+
+    }
 }
 
-class GlobalGenerator extends TreeGenerator {
-    private final MainTreeContextCompressing treeContext = new MainTreeContextCompressing();
+abstract class NestableTreeContextCompressing implements TreeContextCompressing {
+    protected abstract TreeContextCompressing getParentContext();
 
-    MainTreeContextCompressing generateFrom(File rootDir) throws IOException {
-        aux(rootDir);
+    @Override
+    public Object getMetadata(String key) {
+        return getParentContext().getMetadata(key);
+    }
+
+    @Override
+    public Object setMetadata(String key, Object value) {
+        return getParentContext().setMetadata(key, value);
+    }
+
+    @Override
+    public Iterator<Map.Entry<String, Object>> getMetadata() {
+        return getParentContext().getMetadata();
+    }
+
+    @Override
+    public MetadataSerializers getSerializers() {
+        return getParentContext().getSerializers();
+    }
+
+    @Override
+    public TreeContext export(MetadataSerializers s) {
+        getParentContext().export(s);
+        return this;
+    }
+
+    @Override
+    public TreeContext export(String key, TreeIoUtils.MetadataSerializer s) {
+        getParentContext().export(key, s);
+        return this;
+    }
+
+    @Override
+    public TreeContext export(String... name) {
+        getParentContext().export(name);
+        return this;
+    }
+
+    @Override
+    public void setRoot(ITree root) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public ITree getRoot() {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public TreeContext deriveTree() {
+        return getParentContext().deriveTree();
+    }
+
+    @Override
+    public String serialize() {
+        return null;
+    }
+
+    @Override
+    public IntObjectMap<MapValue> getHashMap() {
+        return getParentContext().getHashMap();
+    }
+
+    @Override
+    public Map<Integer, MapValue> getStructHashMap() {
+        return getParentContext().getStructHashMap();
+    }
+
+    @Override
+    public FullNode createCompressedTree(Type type, String label, Acc acc, List<CompressibleNode> children, int length) {
+        return getParentContext().createCompressedTree(type, label, acc, children, length);
+    }
+}
+
+class VersionedGenerator extends TreeGenerator {
+    private final VersionedTreeContextCompressing treeContext = new VersionedTreeContextCompressing();
+    VersionedTreeContextCompressing generateFrom(File rootDir, Version when) throws IOException {
+        TreeContextCompressing.FullNode fullNode = new GlobalGenerator()._generateFrom(rootDir);
+        this.treeContext.putRoot(when, new DecompressedTree(fullNode.node, null, -1));
         return this.treeContext;
     }
 
-    private TreeContextCompressing.FullNode aux(File file) throws IOException {
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            Type type = type("directory");
-            TreeContextCompressing.Acc acc = new TreeContextCompressing.Acc();
-            Map<String, CompressibleNode> children = new TreeMap<>();
-            if (files != null)
-                for (File f : files) {
-                    TreeContextCompressing.FullNode fullNode = aux(f);
-                    acc.add(fullNode);
-                    children.put(f.getName(), fullNode.node);
-                }
-            TreeContextCompressing.FullNode r = treeContext.createCompressedTree(
-                    type, file.getName(), acc,
-                    new ArrayList<>(children.values()),
-                    0, 0, 0, 0, "");
-            return r;
-        } else {
-            assert file.isFile():file;
-            String content;
-
-            Type type = type("file");
-            TreeContextCompressing.Acc acc = new TreeContextCompressing.Acc();
-            TreeContextCompressing.FullNode fullNode;
-            List<CompressibleNode> children;
-            if (file.getName().toString().endsWith(".java")) {
-                try {
-                    Files.readAllBytes(file.toPath());
-                    content = Files.readString(file.toPath());
-                } catch (MalformedInputException e) {
-                    content = Files.readString(file.toPath(), StandardCharsets.ISO_8859_1);
-                }
-                if (content!=null) {
-                    fullNode = new JSitterJavaTreeGenerator2(treeContext.getLocalTC()).generate(content);
-                    children = Collections.singletonList(fullNode.node);
-                    acc.add(fullNode);
-                } else {
-                    children = Collections.emptyList();
-                }
-            } else {
-                children = Collections.emptyList();
-            }
-            TreeContextCompressing.FullNode r = treeContext.createCompressedTree(
-                    type, file.getName(), acc, children,
-                    0, 0, 0, 0, "");
-            return r;
-        }
+    public VersionedTreeContextCompressing getTreeContext() {
+        return treeContext;
     }
 
     @Override
     protected TreeContext generate(Reader r) throws IOException {
         throw new RuntimeException();
+    }
+
+    class GlobalGenerator extends TreeGenerator {
+        private final VersionedTreeContextCompressing.MainTreeContextCompressing treeContext = VersionedGenerator.this.treeContext.getAtVersionTC();
+
+        VersionedTreeContextCompressing.MainTreeContextCompressing generateFrom(File rootDir) throws IOException {
+            TreeContextCompressing.FullNode fullNode = aux(rootDir);
+            DecompressedTree a = new DecompressedTree(_generateFrom(rootDir).node, null, -1);
+            this.treeContext.setRoot(a);
+            return this.treeContext;
+        }
+
+        TreeContextCompressing.FullNode _generateFrom(File rootDir) throws IOException {
+            TreeContextCompressing.FullNode fullNode = aux(rootDir);
+            return fullNode;
+        }
+
+        private TreeContextCompressing.FullNode aux(File file) throws IOException {
+            if (file.isDirectory()) {
+                File[] files = file.listFiles();
+                Type type = type("directory");
+                TreeContextCompressing.Acc acc = new TreeContextCompressing.Acc();
+                Map<String, CompressibleNode> children = new TreeMap<>();
+                TreeContextCompressing.FullNode labelNode = treeContext.createCompressedTree(
+                        type("file_name"), file.getName(), new TreeContextCompressing.Acc(), Collections.emptyList(),
+                        file.getName().length());
+                acc.add(labelNode);
+                List<CompressibleNode> childrenList = new ArrayList<>();
+                childrenList.add(labelNode.node);
+                if (files != null)
+                    for (File f : files) {
+                        TreeContextCompressing.FullNode fullNode = aux(f);
+                        acc.add(fullNode);
+                        children.put(f.getName(), fullNode.node);
+                    }
+                childrenList.addAll(children.values());
+                TreeContextCompressing.FullNode r = treeContext.createCompressedTree(
+                        type, file.getName(), acc,
+                        childrenList,
+                        0);
+                return r;
+            } else {
+                assert file.isFile():file;
+                String content;
+
+                Type type = type("file");
+                TreeContextCompressing.Acc acc = new TreeContextCompressing.Acc();
+                final List<CompressibleNode> children = new ArrayList<>();
+                TreeContextCompressing.FullNode fullNode;
+
+                fullNode = treeContext.createCompressedTree(
+                        type("file_name"), file.getName(), new TreeContextCompressing.Acc(), Collections.emptyList(),
+                        file.getName().length());
+                acc.add(fullNode);
+                children.add(fullNode.node);
+                if (file.getName().toString().endsWith(".java") && !file.toPath().toString().contains("src\\main\\resources\\") && !file.toPath().toString().contains("src\\test\\resources\\")) {
+                    try {
+                        Files.readAllBytes(file.toPath());
+                        content = Files.readString(file.toPath());
+                    } catch (MalformedInputException e) {
+                        content = Files.readString(file.toPath(), StandardCharsets.ISO_8859_1);
+                    }
+                    if (content!=null) {
+                        fullNode = new JSitterJavaTreeGenerator2(treeContext.getLocalTC()).generate(content);
+                        children.add(fullNode.node);
+                        {
+    //                    fullNode.node.serialize(new BufferedWriter(new OutputStreamWriter(System.err)));
+    //                        DecompressedTree a = new DecompressedTree(fullNode.node, null, -1);
+    //                        System.out.println(a.toTreeString());
+    //                        System.out.println(toOriginal(a));
+                        }
+                        acc.add(fullNode);
+                    }
+                }
+                TreeContextCompressing.FullNode r = treeContext.createCompressedTree(
+                        type, "", acc, children,0);
+                return r;
+            }
+        }
+
+        @Override
+        protected TreeContext generate(Reader r) throws IOException {
+            throw new RuntimeException();
+        }
+    }
+
+    public static TreeIoUtils.AbstractSerializer toOriginal(DecompressedTree root) {
+        return new TreeIoUtils.AbstractSerializer() {
+            @Override
+            public void writeTo(Writer writer) throws Exception {
+                aux(writer, root);
+            }
+
+            private void aux(Writer writer, ITree current) throws IOException {
+                if (current.hasLabel())
+                    writer.write(current.getLabel());
+                else if (current.getChildrenSize()==0)
+                    writer.write(current.getType().toString());
+                for(ITree child : current.getChildren()) {
+                    aux(writer, child);
+                }
+            }
+        };
     }
 }
